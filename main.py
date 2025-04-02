@@ -15,7 +15,7 @@ from dank.DankGenerator import DankGenerator
 
 
 MEMO = {}
-LOGFILE_NAME = 'logs/regulator.log'
+#LOGFILE_NAME = 'logs/regulator.log'
 DNS_CHARS = string.ascii_lowercase + string.digits + '._-'
 
 
@@ -190,7 +190,7 @@ def sort_and_unique(file_name: str):
 def main():
   global DNS_CHARS, MEMO
 
-  logging.basicConfig(format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, filename=LOGFILE_NAME, filemode='a')
+  # logging.basicConfig(format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, filename=LOGFILE_NAME, filemode='a')
   parser = argparse.ArgumentParser(description='DNS Regulator')
   parser.add_argument('-th', '--threshold', required=False, type=int, default=500, help='Threshold to start performing ratio test')
   parser.add_argument('-mr', '--max-ratio', required=False, type=float, default=25.0, help='Ratio test parameter R: len(Synth)/len(Obs) < R')
@@ -200,6 +200,7 @@ def main():
   parser.add_argument('-t', '--target', required=True, type=str, help='The domain to target')
   parser.add_argument('-f', '--hosts', required=True, type=str, help='The observed hosts file')
   parser.add_argument('-o', '--output', required=False, type=str, help='Output filename (default: output)', default="output")
+  parser.add_argument('-r', '--rules-file', required=False, type=str, help='Rules output filename (default: <target>.rules)', default=None)
   args = vars(parser.parse_args())
 
   logging.info(f'REGULATOR starting: MAX_RATIO={args["max_ratio"]}, THRESHOLD={args["threshold"]}')
@@ -289,7 +290,8 @@ def main():
               logging.error(f'Rule cannot be processed: {r}')
 
   #Saving rules with a static name
-  with open(f"{args['target']}.rules", 'w') as handle:
+  rules_file = args['rules_file'] if args['rules_file'] else f"{args['target']}.rules"
+  with open(rules_file, 'w') as handle:
     for rule in new_rules:
       handle.write(f'{rule}\n')
 
@@ -304,7 +306,7 @@ def main():
   #Replacing incorrect/malformed subdomains (e.g. test..example.com)
   with open(args['output'], 'r+') as handle:
     #Sorting and uniquifying is required since for example before replacing test..example.com, test.example.com could have existed 
-    replaced = sorted(set(map(lambda line: re.sub('\.{2,}', '.', line) ,handle.readlines())))
+    replaced = sorted(set(map(lambda line: re.sub(r'\.{2,}', '.', line) ,handle.readlines())))
   with open(args['output'], 'w') as handle:
     handle.writelines(replaced)
     
